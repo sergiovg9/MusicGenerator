@@ -1,1 +1,1 @@
-# MusicGenerator
+# Music Generator
