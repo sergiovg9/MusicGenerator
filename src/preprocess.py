@@ -3,78 +3,63 @@ import json
 import pandas as pd
 from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from music21 import converter, instrument, note, chord
+from music21 import converter, instrument, note, chord, interval
 
 DATA_ROOT = Path("data/maestro-v3.0.0")
 CSV_PATH = DATA_ROOT / "maestro-v3.0.0.csv"
 OUTPUT_DIR = Path("outputs/token_sequences")
-RESOLUTION = 0.25
-VELOCITY_BINS = 8
-TIME_SHIFT_LIMIT = 32
 
-def velocity_to_bin(velocity, n_bins=VELOCITY_BINS):
-    bin_size = 128 // n_bins
-    return velocity // bin_size
+def normalize_key(midi_data):
+    """
+    Detects the key and transposes everything to C major or A minor.
+    """
+    try:
+        key = midi_data.analyze('key')
+    except:
+        return midi_data  # fallback
 
-def quantize_time(t, resolution=RESOLUTION):
-    return round(t / resolution) * resolution
+    if key.mode == "major":
+        interval_to_c = interval.Interval(key.tonic, note.Note("C"))
+    else:  # minor
+        interval_to_c = interval.Interval(key.tonic, note.Note("A"))
+
+    return midi_data.transpose(interval_to_c)
 
 def parse_midi_file(filepath):
-    """Convert a MIDI file to a sequence of token events."""
+    """Convert a MIDI file into a simplified token sequence (only highest note, normalized key)."""
     try:
         midi_data = converter.parse(filepath)
     except Exception as e:
         return None, f"Error reading {filepath}: {e}"
 
+    # Normalize key
+    midi_data = normalize_key(midi_data)
+
+    # Select piano part
     parts = instrument.partitionByInstrument(midi_data)
-    piano_part = parts.parts[0] if parts else midi_data.flat.notes
+    piano_part = parts.parts[0] if parts else midi_data.flatten().notes
 
-    events = []
-    prev_time = 0.0
-    current_velocity_bin = None
+    tokens = []
 
-    for element in piano_part.flat.notesAndRests:
-        start = quantize_time(element.offset)
-        delta = start - prev_time
-        if delta > 0:
-            for _ in range(min(int(delta / RESOLUTION), TIME_SHIFT_LIMIT)):
-                events.append("TIME_SHIFT_1")
-
+    for element in piano_part.flatten().notesAndRests:
         if isinstance(element, note.Note):
-            velocity = element.volume.velocity or 64
-            velocity_bin = velocity_to_bin(velocity)
-            if velocity_bin != current_velocity_bin:
-                events.append(f"VELOCITY_{velocity_bin}")
-                current_velocity_bin = velocity_bin
-            pitch = element.pitch.midi
-            events.append(f"NOTE_ON_{pitch}")
-            for _ in range(min(int(element.quarterLength / RESOLUTION), TIME_SHIFT_LIMIT)):
-                events.append("TIME_SHIFT_1")
-            events.append(f"NOTE_OFF_{pitch}")
+            tokens.append(f"NOTE_{element.pitch.midi}")
 
         elif isinstance(element, chord.Chord):
-            velocity = element.volume.velocity or 64
-            velocity_bin = velocity_to_bin(velocity)
-            if velocity_bin != current_velocity_bin:
-                events.append(f"VELOCITY_{velocity_bin}")
-                current_velocity_bin = velocity_bin
-            for pitch in [p.midi for p in element.pitches]:
-                events.append(f"NOTE_ON_{pitch}")
-            for _ in range(min(int(element.quarterLength / RESOLUTION), TIME_SHIFT_LIMIT)):
-                events.append("TIME_SHIFT_1")
-            for pitch in [p.midi for p in element.pitches]:
-                events.append(f"NOTE_OFF_{pitch}")
+            # Only keep highest note
+            highest = max(p.midi for p in element.pitches)
+            tokens.append(f"NOTE_{highest}")
 
-        prev_time = start + element.quarterLength
+        # rests are completely ignored
 
-    events.append("END")
-    return events, None
+    tokens.append("END")
+    return tokens, None
 
 def process_entry(row, output_dir):
     midi_path = DATA_ROOT / row["midi_filename"]
     out_path = output_dir / f"{midi_path.stem}.json"
     if out_path.exists():
-        return f"The file already exists. Skipping: {midi_path.name}"
+        return f"File already exists. Skipping: {midi_path.name}"
 
     tokens, error = parse_midi_file(midi_path)
     if error or not tokens:
@@ -84,7 +69,6 @@ def process_entry(row, output_dir):
         "composer": row["canonical_composer"],
         "title": row["canonical_title"],
         "year": row["year"],
-        "duration": row["duration"],
         "split": row["split"],
         "midi_file": str(row["midi_filename"])
     }
@@ -96,7 +80,7 @@ def process_entry(row, output_dir):
 
 def process_maestro_parallel(csv_path=CSV_PATH, output_dir=OUTPUT_DIR, max_workers=6):
     df = pd.read_csv(csv_path)
-    print(f"{len(df)} found entries in the dataset.")
+    print(f"{len(df)} entries found in the dataset.")
 
     for split in ["train", "validation", "test"]:
         subset = df[df["split"] == split]
