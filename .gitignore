@@ -209,5 +209,3 @@ __marimo__/
 # Dataset
 data/
 outputs/
-ui.py
-main.py
