@@ -26,7 +26,7 @@ def normalize_key(midi_data):
 
     return midi_data.transpose(interval_to_c)
 
-def parse_midi_file(filepath):
+def parse_midi_file(filepath, normalize=True):
     """Convert a MIDI file into a simplified token sequence (only highest note, normalized key)."""
 
     try:
@@ -35,7 +35,8 @@ def parse_midi_file(filepath):
         return None, f"Error reading {filepath}: {e}"
 
     # Normalize key
-    midi_data = normalize_key(midi_data)
+    if normalize:
+        midi_data = normalize_key(midi_data)
 
     parts = instrument.partitionByInstrument(midi_data)
 

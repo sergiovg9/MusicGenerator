@@ -124,6 +124,16 @@ The main.py script in the UI folder internally calls the Markov generator and pl
 
 `data/` – Original and processed MIDI datasets
 
+## Unit testing
+
+Every stage of the workflow counts with its own Testing folder. That is why every stage's testing has to be run separetely:
+
+> pytest src\1-Data_collection_and_preprocessing
+
+> pytest src\2-Training_Validation_Testing
+
+> pytest src\3-Generator_and_UI
+
 ## Documentation
 
 * [Specification document](./Documentation/SpecificationDocument.md)

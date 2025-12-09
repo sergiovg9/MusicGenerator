@@ -12,10 +12,16 @@ dependencies = [
     "numpy (==2.3.5)",
     "pandas (==2.3.3)",
     "pillow (==12.0.0)",
-    "sounddevice (==0.5.3)"
+    "sounddevice (==0.5.3)",
+    "pytest (>=9.0.2,<10.0.0)"
 ]
 
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "pytest (>=9.0.2,<10.0.0)"
+]
