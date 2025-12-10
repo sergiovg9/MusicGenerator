@@ -1,16 +1,7 @@
 import unittest
-from preprocess_2 import (
-    normalize_key,
-    parse_midi_file,
-    process_entry,
-    process_maestro_parallel,
-    DATA_ROOT as original_data_root,
-    CSV_PATH,
-    OUTPUT_DIR
-)
-from music21 import stream, note, chord, key as m21key, interval
+from preprocess_2 import normalize_key, parse_midi_file, process_entry, process_maestro_parallel, DATA_ROOT as original_data_root
+from music21 import stream, note, chord, key as m21key
 from pathlib import Path
-import json
 import tempfile
 import pandas as pd
 

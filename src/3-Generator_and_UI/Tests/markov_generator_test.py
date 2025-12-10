@@ -9,7 +9,7 @@ class TestScript(unittest.TestCase):
         self.sample_measures = 1
         self.sample_key = "C"
 
-    # --- transpose_note ----------------------------------------------------------------
+    # transpose_note
 
     def test_transpose_note_returns_end_unchanged(self):
         """transpose_note must return 'END' unchanged."""
@@ -23,7 +23,7 @@ class TestScript(unittest.TestCase):
         """transpose_note must correctly subtract semitones."""
         self.assertEqual(transpose_note("NOTE_60", -2), "NOTE_58")
 
-    # --- transpose_sequence -------------------------------------------------------------
+    # transpose_sequence
 
     def test_transpose_sequence_applies_transposition_to_all_notes(self):
         """transpose_sequence must apply transpose_note to each element."""
@@ -31,7 +31,7 @@ class TestScript(unittest.TestCase):
         result = transpose_sequence(seq, 2)
         self.assertEqual(result, ["NOTE_62", "NOTE_64"])
 
-    # --- validate_inputs ----------------------------------------------------------------
+    # validate_inputs
 
     def test_validate_inputs_raises_for_invalid_order(self):
         """validate_inputs must fail when order is not 1-4."""
@@ -60,7 +60,7 @@ class TestScript(unittest.TestCase):
         except Exception:
             self.fail("validate_inputs raised unexpectedly.")
 
-    # --- load_model ---------------------------------------------------------------------
+    # load_model
 
     def test_load_model_returns_cached_instance_when_available(self):
         """load_model must return cached model if previously loaded."""
@@ -75,7 +75,7 @@ class TestScript(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             load_model(99)
 
-    # --- weighted_choice ----------------------------------------------------------------
+    # weighted_choice
 
     def test_weighted_choice_returns_key_from_distribution(self):
         """weighted_choice must return one of the keys from distribution."""
@@ -83,7 +83,7 @@ class TestScript(unittest.TestCase):
         choice = weighted_choice(dist)
         self.assertIn(choice, dist.keys())
 
-    # --- generate_sequence ---------------------------------------------------------------
+    # generate_sequence
 
     def test_generate_sequence_calls_validation_and_raises_on_invalid_input(self):
         """generate_sequence must propagate validation errors."""
