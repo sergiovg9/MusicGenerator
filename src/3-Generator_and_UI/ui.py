@@ -76,7 +76,7 @@ class StaffCanvas(tk.Canvas):
         self.staff_lines = 5
 
         # Cleff image
-        image = Image.open("src\\3-Generator_and_UI\\treble_clef.png")
+        image = Image.open("src/3-Generator_and_UI/treble_clef.png")
         image = image.resize((int(self.line_spacing * 3), int(self.line_spacing * 6)), Image.Resampling.LANCZOS)
         self.clef_image = ImageTk.PhotoImage(image)
 
