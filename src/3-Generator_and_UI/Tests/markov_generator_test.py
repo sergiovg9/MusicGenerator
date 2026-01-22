@@ -1,5 +1,8 @@
 import unittest
 from markov_generator import transpose_note, transpose_sequence, validate_inputs, load_model, weighted_choice, generate_sequence, KEY_TO_SEMITONES, _MODEL_CACHE
+from pathlib import Path
+import json
+import random
 
 class TestScript(unittest.TestCase):
     def setUp(self):
@@ -127,3 +130,39 @@ class TestScript(unittest.TestCase):
         output = generate_sequence(1, ["NOTE_62"], 1, "D")  # D -> -2 semitones normalization
         # After normalization and reverse transposition, original seed should remain
         self.assertEqual(output, ["NOTE_62"])
+
+    def test_generated_sequences_exist_in_training_data(self):
+        """
+        Generated sequences must not contain transitions that were never observed
+        in the original training data. Every contiguous subsequence of length k+1
+        must appear at least once in the training token sequences.
+        """
+        root = Path("outputs/token_sequences/train")
+        sequences = []
+
+        if not root.exists():
+            return sequences
+
+        for path in root.rglob("*.json"):
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if "tokens" in data and isinstance(data["tokens"], list):
+                    sequences.append(data["tokens"])
+
+        self.assertTrue(len(sequences) > 0)
+
+        order = random.randint(1, 4)
+        seed = sequences[0][:order]
+        measures = 2
+        key = "C"
+
+        generated = generate_sequence(order, seed, measures, key)
+
+        observed_subsequences = set()
+        for seq in sequences:
+            for i in range(len(seq) - order):
+                observed_subsequences.add(tuple(seq[i:i + order + 1]))
+
+        for i in range(len(generated) - order):
+            subseq = tuple(generated[i:i + order + 1])
+            self.assertIn(subseq, observed_subsequences)
